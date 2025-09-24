@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { InterviewData, Trade, InsightCardData } from '../types';
 import { ChartIcon } from './icons';
+import { GEMINI_API_KEY } from '../apiKey';
 
 interface BaselineReportScreenProps {
   interviewData: InterviewData;
@@ -19,7 +20,7 @@ const BaselineReportScreen: React.FC<BaselineReportScreenProps> = ({ interviewDa
       setIsLoading(true);
       try {
         // Corrected initialization to use an object with the apiKey
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY! });
         
         const tradeSummaries = trades.map(t => `- Reason for trade: ${t.reason}`).join('\n');
         

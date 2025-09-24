@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { InsightCardData, ChallengeData } from '../types';
 import { GeminiOrbIcon } from './icons';
+import { GEMINI_API_KEY } from '../apiKey';
 
 interface CustomChallengeScreenProps {
   reportData: InsightCardData[];
@@ -18,7 +19,7 @@ const CustomChallengeScreen: React.FC<CustomChallengeScreenProps> = ({ reportDat
       setIsLoading(true);
       try {
         // Corrected initialization to use an object with the apiKey
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY! });
         
         const insightsSummary = reportData.map(insight => `- ${insight.title} (${insight.type}): ${insight.content}`).join('\n');
 
