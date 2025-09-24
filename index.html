@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apex Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react/": "https://aistudiocdn.com/react@^19.1.1/",
+          "react": "https://aistudiocdn.com/react@^19.1.1",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+          "@google/genai": "https://aistudiocdn.com/@google/genai/0.15.0/index.min.js"
+        }
+      }
+    </script>
+    <style>
+      /* --- Centralized Animation Definitions --- */
+      @keyframes keyframe-fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      @keyframes keyframe-fade-in-translate {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes keyframe-fade-in-delayed {
+        0% { opacity: 0; }
+        50% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+
+      @keyframes keyframe-pulse-slow {
+        50% { opacity: .7; }
+      }
+
+      /* --- Animation Utility Classes --- */
+      .animate-fade-in {
+        animation: keyframe-fade-in-translate 0.8s ease-out forwards;
+      }
+      .animate-fade-in-slow {
+        animation: keyframe-fade-in 2s ease-in-out forwards;
+      }
+      .animate-fade-in-delayed {
+        animation: keyframe-fade-in-delayed 3s ease-in-out forwards;
+      }
+      .animate-fade-in-fast {
+        animation: keyframe-fade-in 0.3s ease-out forwards;
+      }
+      .animate-pulse-slow {
+        animation: keyframe-pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
