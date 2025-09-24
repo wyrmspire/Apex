@@ -1,19 +1,25 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ApexLogo } from './icons';
 
-const SplashScreen: React.FC = () => {
+interface SplashScreenProps {
+  onComplete: () => void;
+}
+
+const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onComplete();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black">
-      <div className="text-center animate-fade-in-slow">
-        <div className="flex justify-center items-center gap-4 mb-6 opacity-80 animate-pulse-slow">
-            <ApexLogo className="w-12 h-12 text-blue-400" />
-            <h1 className="text-4xl font-light tracking-wider text-gray-200">Apex Challenge</h1>
-        </div>
-        <p className="text-lg text-gray-400 animate-fade-in-delayed tracking-wide">
-          The journey to consistent trading starts with understanding.
-        </p>
+    <div className="flex-grow flex flex-col items-center justify-center bg-gray-900 text-white">
+      <div className="animate-pulse">
+        <ApexLogo className="w-24 h-24 text-teal-400" />
       </div>
+      <h1 className="mt-4 text-3xl font-bold tracking-wider">Apex Challenge</h1>
+      <p className="mt-2 text-lg text-gray-400">Your AI Trading Performance Coach</p>
     </div>
   );
 };

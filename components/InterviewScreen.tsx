@@ -1,108 +1,112 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GeminiOrbIcon, SendIcon } from './icons';
 import { InterviewData } from '../types';
+import { GeminiOrbIcon, SendIcon } from './icons';
 
 interface InterviewScreenProps {
   onComplete: (data: InterviewData) => void;
 }
 
-const questions = [
-  "Great. Let's start with your story. Briefly, what markets do you trade, and for how long have you been trading?",
-  "Thank you. Now, let's talk about your playbook. What are the names of the primary setups you trade? (e.g., 'Opening Range Breakout', 'RSI Divergence'). Just list them out.",
-  "Got it. This is a crucial question: What is the #1 mistake that you feel holds you back the most? (e.g., 'Revenge trading', 'Moving my stop-loss').",
-  "I understand. That's a very common challenge. Finally, in a perfect world, what does a successful trading day feel like to you?",
-];
-
-interface Message {
-    text: string;
-    sender: 'ai' | 'user';
-}
-
 const InterviewScreen: React.FC<InterviewScreenProps> = ({ onComplete }) => {
-    const [messages, setMessages] = useState<Message[]>([{text: questions[0], sender: 'ai'}]);
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [inputValue, setInputValue] = useState('');
-    const [answers, setAnswers] = useState<string[]>([]);
-    const [isTyping, setIsTyping] = useState(false);
-    const chatEndRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
+  const [userInput, setUserInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [interviewStage, setInterviewStage] = useState(0);
+  const [interviewData, setInterviewData] = useState<Partial<InterviewData>>({});
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isTyping]);
+  const questions = [
+    "To start, tell me a bit about your trading story. How did you get started, and what has your journey been like so far?",
+    "What are the top 2-3 specific trade setups you primarily focus on? Describe them briefly.",
+    "What's the single biggest, most painful mistake you find yourself repeating in your trading?",
+    "Describe your ideal trading day. What does it look and feel like from start to finish?"
+  ];
 
-    const handleSend = () => {
-        if (!inputValue.trim() || isTyping) return;
-        
-        const newAnswers = [...answers, inputValue];
-        setMessages(prev => [...prev, { text: inputValue, sender: 'user' }]);
-        setAnswers(newAnswers);
-        setInputValue('');
+  useEffect(() => {
+    setMessages([{ role: 'model', text: questions[0] }]);
+  }, []);
 
-        const nextIndex = currentQuestionIndex + 1;
-        
-        setIsTyping(true);
-        setTimeout(() => {
-            if (nextIndex < questions.length) {
-                setMessages(prev => [...prev, { text: questions[nextIndex], sender: 'ai' }]);
-                setCurrentQuestionIndex(nextIndex);
-            } else {
-                const finalData: InterviewData = {
-                    story: newAnswers[0] || '',
-                    setups: newAnswers[1] || '',
-                    mistake: newAnswers[2] || '',
-                    idealDay: newAnswers[3] || '',
-                };
-                onComplete(finalData);
-            }
-            setIsTyping(false);
-        }, 1500);
-    };
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    return (
-        <div className="flex flex-col h-screen max-w-3xl mx-auto p-4 animate-fade-in">
-            <div className="flex-grow overflow-y-auto pr-2 space-y-6">
-                {messages.map((msg, index) => (
-                    <div key={index} className={`flex items-end gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                        {msg.sender === 'ai' && <GeminiOrbIcon className="w-8 h-8 text-blue-400 flex-shrink-0" />}
-                        <div className={`max-w-md md:max-w-lg p-4 rounded-2xl ${msg.sender === 'ai' ? 'bg-gray-700 text-gray-200 rounded-bl-none' : 'bg-blue-600 text-white rounded-br-none'}`}>
-                            <p>{msg.text}</p>
-                        </div>
-                    </div>
-                ))}
-                {isTyping && (
-                    <div className="flex items-end gap-3 justify-start animate-fade-in">
-                       <GeminiOrbIcon className="w-8 h-8 text-blue-400 flex-shrink-0" />
-                       <div className="p-4 rounded-2xl bg-gray-700 text-gray-200 rounded-bl-none">
-                            <div className="flex items-center space-x-1.5">
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0s'}}></span>
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
-                            </div>
-                       </div>
-                    </div>
-                )}
-                <div ref={chatEndRef} />
+  const handleSendMessage = async () => {
+    if (!userInput.trim() || isLoading) return;
+
+    const newUserMessage = { role: 'user' as const, text: userInput };
+    setMessages(prev => [...prev, newUserMessage]);
+    setUserInput('');
+    setIsLoading(true);
+
+    const currentStage = interviewStage;
+    const newInterviewData = { ...interviewData };
+    if (currentStage === 0) newInterviewData.story = userInput;
+    if (currentStage === 1) newInterviewData.setups = userInput;
+    if (currentStage === 2) newInterviewData.mistake = userInput;
+    if (currentStage === 3) newInterviewData.idealDay = userInput;
+    setInterviewData(newInterviewData);
+
+    setTimeout(() => {
+      const modelResponse = "Thanks for sharing. That's really insightful.";
+      const nextStage = currentStage + 1;
+
+      if (nextStage < questions.length) {
+        setMessages(prev => [...prev, { role: 'model', text: `${modelResponse} Now, ${questions[nextStage].toLowerCase()}` }]);
+        setInterviewStage(nextStage);
+      } else {
+        setMessages(prev => [...prev, { role: 'model', text: "Thank you for sharing all of that. I have what I need to get started. Let's move on to the next step." }]);
+        setTimeout(() => onComplete(newInterviewData as InterviewData), 2000);
+      }
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  return (
+    <div className="flex-grow flex flex-col h-[calc(100vh)] p-4">
+      <div className="flex-grow overflow-y-auto mb-4 p-4 space-y-4">
+        {messages.map((msg, index) => (
+          <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+            {msg.role === 'model' && <GeminiOrbIcon className="w-8 h-8 text-teal-400 flex-shrink-0" />}
+            <div className={`max-w-xl p-3 rounded-lg ${msg.role === 'model' ? 'bg-gray-800 text-gray-200' : 'bg-teal-600 text-white'}`}>
+              <p className="whitespace-pre-wrap">{msg.text}</p>
             </div>
-            <div className="mt-6 flex items-center bg-gray-800 rounded-xl p-2 border border-gray-700">
-                <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder="Type your response..."
-                    className="flex-grow bg-transparent text-gray-200 placeholder-gray-500 focus:outline-none px-3"
-                    disabled={isTyping}
-                />
-                <button
-                    onClick={handleSend}
-                    disabled={isTyping || !inputValue.trim()}
-                    className="bg-blue-600 p-3 rounded-lg text-white disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
-                >
-                    <SendIcon className="w-5 h-5" />
-                </button>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex items-start gap-3">
+            <GeminiOrbIcon className="w-8 h-8 text-teal-400 flex-shrink-0 animate-pulse" />
+            <div className="max-w-xl p-3 rounded-lg bg-gray-800 text-gray-200">
+              <div className="flex items-center space-x-1">
+                <span className="h-2 w-2 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="h-2 w-2 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="h-2 w-2 bg-teal-400 rounded-full animate-bounce"></span>
+              </div>
             </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="flex-shrink-0 p-4 bg-gray-900 border-t border-gray-700">
+        <div className="flex items-center bg-gray-800 rounded-full p-2">
+          <textarea
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
+            placeholder="Type your response..."
+            className="flex-grow bg-transparent text-white placeholder-gray-400 focus:outline-none resize-none px-4"
+            rows={1}
+            disabled={isLoading || interviewStage >= questions.length}
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={isLoading || !userInput.trim() || interviewStage >= questions.length}
+            className="bg-teal-500 rounded-full p-2 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-teal-600 transition"
+          >
+            <SendIcon className="w-6 h-6 text-white" />
+          </button>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default InterviewScreen;

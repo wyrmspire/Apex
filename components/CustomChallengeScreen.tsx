@@ -1,42 +1,104 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+// Corrected import to use @google/genai SDK
+import { GoogleGenAI } from '@google/genai';
+import { InsightCardData, ChallengeData } from '../types';
 import { GeminiOrbIcon } from './icons';
-import { ChallengeData } from '../types';
 
 interface CustomChallengeScreenProps {
-  challenge: ChallengeData | null;
-  onAccept: () => void;
+  reportData: InsightCardData[];
+  onComplete: (challenge: ChallengeData) => void;
 }
 
-const CustomChallengeScreen: React.FC<CustomChallengeScreenProps> = ({ challenge, onAccept }) => {
-  const focusSetup = challenge?.focusSetup || "'Your Hidden Strength'";
-  const mission = challenge?.mission || "Our primary mission will be to eliminate impulsive trades and focus exclusively on mastering your hidden strength.";
+const CustomChallengeScreen: React.FC<CustomChallengeScreenProps> = ({ reportData, onComplete }) => {
+  const [challenge, setChallenge] = useState<ChallengeData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const generateChallenge = async () => {
+      setIsLoading(true);
+      try {
+        // Corrected initialization to use an object with the apiKey
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+        
+        const insightsSummary = reportData.map(insight => `- ${insight.title} (${insight.type}): ${insight.content}`).join('\n');
+
+        const prompt = `
+          Based on the following trading performance insights, create a specific, actionable, 1-week challenge for the trader.
+          
+          **Performance Insights:**
+          ${insightsSummary}
+          
+          The challenge should have two parts:
+          1.  **Focus Setup**: A single, specific trade setup they should ONLY focus on for the week. This should be derived from their strengths.
+          2.  **Mission**: A single, clear mission to combat their primary weakness. This should be a behavioral goal.
+          
+          Format the output as a single, valid JSON object with two keys: "focusSetup" and "mission". The entire response text should be only the JSON object.
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json'
+            }
+        });
+        
+        // Corrected response handling to use the .text property and strip markdown
+        let jsonText = response.text.trim();
+        if (jsonText.startsWith('```json')) {
+          jsonText = jsonText.slice(7, -3);
+        }
+        const generatedChallenge = JSON.parse(jsonText);
+        setChallenge(generatedChallenge);
+
+      } catch (error) {
+        console.error('Error generating challenge:', error);
+        setChallenge({
+          focusSetup: 'Error generating challenge.',
+          mission: 'Please check the console for details and try again later.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    generateChallenge();
+  }, [reportData]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-grow flex flex-col items-center justify-center text-center">
+        <GeminiOrbIcon className="w-16 h-16 text-teal-400 animate-spin mb-4" />
+        <h1 className="text-3xl font-bold text-white">Crafting Your Custom Challenge...</h1>
+        <p className="text-lg text-gray-400 mt-2">Gemini is designing a mission just for you.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 animate-fade-in">
-      <div className="max-w-2xl w-full bg-gray-800/50 rounded-2xl shadow-2xl p-8 md:p-12 border border-gray-700 backdrop-blur-sm text-center">
-        <div className="mb-8">
-            <GeminiOrbIcon className="w-20 h-20 mx-auto text-blue-400"/>
-            <h1 className="text-3xl font-bold mt-4 text-white">Your 90-Day Apex Challenge</h1>
+    <div className="flex-grow flex flex-col items-center justify-center p-8 text-center">
+      <h1 className="text-4xl font-bold text-white mb-4">Your 1-Week Challenge</h1>
+      <p className="text-lg text-gray-400 mb-10 max-w-2xl">This mission is designed to build on your strengths and directly address your biggest leak.</p>
+      
+      <div className="bg-gray-800 p-8 rounded-lg max-w-3xl w-full border border-gray-700 space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold text-teal-400 mb-2 tracking-widest uppercase">Focus Setup</h2>
+          <p className="text-2xl text-white">{challenge?.focusSetup}</p>
         </div>
-        <div className="space-y-6 text-lg text-gray-300 leading-relaxed">
-            <p>Based on the analysis, I have designed your challenge. {mission} We'll focus on mastering the <strong className="text-blue-400 font-semibold">{focusSetup}</strong> setup.</p>
-            <p className="font-semibold text-white">This is how we turn your hidden strength into your core skill.</p>
-            <p className="text-2xl font-bold text-white mt-8">Are you ready to accept your challenge?</p>
-        </div>
-        <div className="mt-12 flex flex-col sm:flex-row justify-center items-center gap-4">
-          <button
-            onClick={onAccept}
-            className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-green-500 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-500/50"
-          >
-            Accept the Challenge
-          </button>
-          <button
-            className="w-full sm:w-auto text-gray-400 font-semibold py-3 px-8 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            I have questions first
-          </button>
+        <div>
+          <h2 className="text-xl font-semibold text-teal-400 mb-2 tracking-widest uppercase">Your Mission</h2>
+          <p className="text-2xl text-white">{challenge?.mission}</p>
         </div>
       </div>
+
+      {challenge && !isLoading && (
+        <button
+          onClick={() => onComplete(challenge)}
+          className="mt-12 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-8 rounded-full text-lg transition duration-300 ease-in-out transform hover:scale-105"
+        >
+          Begin Challenge & Go to Dashboard
+        </button>
+      )}
     </div>
   );
 };
